@@ -1,0 +1,193 @@
+# =============================================================================
+# Multi-Tenant LoRA Fine-Tuning & Inference on SageMaker AI
+# =============================================================================
+# This is the ONLY file customers need to edit to adapt the solution to their
+# data, tenants, and scale.
+#
+# Copy this file to config.yaml and customize for your environment.
+# =============================================================================
+
+# ----------------------------------------------------------------------------
+# AWS settings
+# ----------------------------------------------------------------------------
+aws:
+  region: us-east-1
+  # IAM role ARN that SageMaker will assume. Must have:
+  #   - s3:GetObject/PutObject on the platform bucket
+  #   - bedrock:InvokeModel (if using Bedrock for evaluation)
+  #   - logs:CreateLogGroup/CreateLogStream/PutLogEvents
+  execution_role_arn: arn:aws:iam::590183704046:role/MultiTenantLoRAExecutionRole
+
+# ----------------------------------------------------------------------------
+# Platform-wide S3 storage
+# ----------------------------------------------------------------------------
+storage:
+  # Everything is namespaced under this bucket with per-tenant prefixes
+  platform_bucket: multi-tenant-lora-platform-590183704046-us-east-1
+  base_model_prefix: base-model
+  tenant_data_prefix: tenants  # s3://bucket/tenants/<tenant_id>/...
+
+# ----------------------------------------------------------------------------
+# Base foundation model (shared across all tenants)
+# ----------------------------------------------------------------------------
+base_model:
+  # SageMaker JumpStart model ID (required by SDK v3 SFTTrainer).
+  # Using 1B model — supports LoRA hosting on ml.g5.4xlarge (available quota)
+  hf_model_id: meta-textgeneration-llama-3-2-1b-instruct
+  # Set if model requires EULA acceptance via a named secret
+  hf_token_secret_name: null
+  # Local name used for all SageMaker resources
+  name: llama-3-2-1b-instruct
+
+# ----------------------------------------------------------------------------
+# Training settings (LoRA hyperparameters + compute)
+# ----------------------------------------------------------------------------
+training:
+  # HuggingFace PyTorch Training DLC — picked automatically if null
+  # https://github.com/aws/deep-learning-containers/blob/master/available_images.md
+  image_uri: null
+  # Framework versions (used when image_uri is null)
+  transformers_version: "4.49.0"
+  pytorch_version: "2.5.1"
+  python_version: py311
+
+  # Compute per training job (each tenant trains independently)
+  instance_type: ml.g5.2xlarge
+  instance_count: 1
+  volume_size_gb: 100
+  max_runtime_seconds: 7200   # 2 hours
+
+  # LoRA hyperparameters — tenants can override these per-adapter
+  lora:
+    r: 16                     # rank of the adapter matrices
+    alpha: 32                 # scaling factor
+    dropout: 0.05
+    target_modules:           # which attention projections to adapt
+      - q_proj
+      - v_proj
+      - k_proj
+      - o_proj
+    task_type: CAUSAL_LM
+
+  # Training hyperparameters
+  hyperparameters:
+    epochs: 3
+    per_device_train_batch_size: 4
+    per_device_eval_batch_size: 4
+    gradient_accumulation_steps: 4
+    learning_rate: 2.0e-4
+    lr_scheduler_type: cosine
+    warmup_ratio: 0.1
+    logging_steps: 10
+    save_strategy: epoch
+    max_seq_length: 2048
+    bf16: true
+    # Enable Flash Attention if supported by the base model
+    flash_attention_2: true
+
+# ----------------------------------------------------------------------------
+# Inference settings (shared endpoint, per-tenant adapter components)
+# ----------------------------------------------------------------------------
+inference:
+  # DJL LMI container (Deep Java Library - Large Model Inference)
+  # Auto-resolved if null
+  image_uri: null
+  djl_version: "0.33.0"       # LMI version — includes vLLM + multi-LoRA
+
+  endpoint_name: multi-tenant-lora-endpoint
+  base_component_name: base-foundation-model
+
+  # Shared endpoint compute
+  instance_type: ml.g5.4xlarge  # 1x A10G, 24GB GPU (quota available)
+  initial_instance_count: 1
+  min_instance_count: 1
+  max_instance_count: 2
+
+  # LMI + vLLM runtime options
+  engine: "Python"
+  option:
+    rolling_batch: "lmi-dist"
+    enable_lora: true
+    max_loras: 10              # hot in GPU memory (reduced for single GPU)
+    max_cpu_loras: 30          # warm in CPU memory
+    dtype: fp16
+    max_model_len: 2048
+    max_rolling_batch_size: 8
+    tensor_parallel_degree: 1
+    trust_remote_code: true
+
+  # Auto-scaling target metric
+  autoscaling:
+    enabled: true
+    target_invocations_per_instance: 10
+    scale_in_cooldown_seconds: 300
+    scale_out_cooldown_seconds: 60
+
+# ----------------------------------------------------------------------------
+# Evaluation & MLOps — every adapter is a testable artifact
+# ----------------------------------------------------------------------------
+evaluation:
+  # Threshold below which a new adapter is BLOCKED from deployment
+  accuracy_regression_threshold: 0.02  # 2 percentage points
+  # Minimum accuracy required regardless of regression
+  min_absolute_accuracy: 0.70
+  # How many examples to run through the new adapter
+  eval_sample_size: 100
+  # Inference parameters used during evaluation
+  temperature: 0.0
+  max_new_tokens: 100
+
+  # CloudWatch alarms fire when adapter accuracy drops
+  cloudwatch:
+    alarm_namespace: MultiTenantLoRA
+    alarm_threshold: 0.85
+    sns_topic_arn: null        # optional — receive alarm notifications
+
+  # MLflow tracking — null disables MLflow logging
+  mlflow:
+    enabled: false
+    tracking_server_arn: null  # SageMaker managed MLflow server ARN
+
+# ----------------------------------------------------------------------------
+# Tenants — every entry creates its own isolated training + adapter component
+# ----------------------------------------------------------------------------
+# Customers provide their own tenant list. Each tenant's training data must
+# be uploaded to:
+#   s3://<platform_bucket>/tenants/<tenant_id>/training-data/<task>/train.jsonl
+#   s3://<platform_bucket>/tenants/<tenant_id>/training-data/<task>/eval.jsonl
+#
+# Format: JSONL with {"prompt": "...", "completion": "..."} per line
+# ----------------------------------------------------------------------------
+tenants:
+  - id: tenant-support
+    display_name: General Support
+    # Default LoRA config (rank 16)
+    lora_overrides: {}
+    tasks:
+      - name: type-classifier
+        description: Classify ITSM tickets by issue type
+      - name: priority-classifier
+        description: Classify ITSM tickets by priority level
+      - name: response-generation
+        description: Generate support agent responses to customer messages
+
+  - id: tenant-partner
+    display_name: Partner & Licensing
+    lora_overrides:
+      r: 8  # smaller adapter — less data for this tenant
+    tasks:
+      - name: type-classifier
+        description: Classify partner/licensing tickets by type
+      - name: priority-classifier
+        description: Classify partner/licensing tickets by priority
+      - name: response-generation
+        description: Generate partner/licensing support responses
+
+# ----------------------------------------------------------------------------
+# Data residency (optional — for regulated workloads)
+# ----------------------------------------------------------------------------
+data_residency:
+  # If set, tenants listed here run in their specified region
+  # Example:
+  #   tenant-eu-1: eu-west-1
+  tenant_regions: {}

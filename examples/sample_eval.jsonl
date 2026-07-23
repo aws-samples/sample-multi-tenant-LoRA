@@ -1,0 +1,3 @@
+{"input": "Cannot connect to VPN from home office.", "expected": "Network"}
+{"input": "Password reset request for SSO account.", "expected": "Identity"}
+{"input": "Printer on floor 3 shows paper jam error.", "expected": "Hardware"}

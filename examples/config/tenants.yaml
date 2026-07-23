@@ -1,0 +1,26 @@
+# EXAMPLE tenant registry — replace every placeholder before use. Tenant IDs
+# and IAM role ARNs must exist in the target AWS account.
+tenants:
+  - tenant_id: tenant-a
+    training_role_arn: arn:aws:iam::123456789012:role/training-role-tenant-a
+    invoke_role_arn: arn:aws:iam::123456789012:role/invoke-role-tenant-a
+    tasks:
+      - name: type-classifier
+        base_model_id: llama-3-1-8b-instruct
+        training_data_s3_prefix: type-classifier/
+        evaluation_data_s3_key: type-classifier/eval.jsonl
+        current_version: 1
+        regression_threshold: 0.02
+        accuracy_floor: 0.85
+
+  - tenant_id: tenant-b
+    training_role_arn: arn:aws:iam::123456789012:role/training-role-tenant-b
+    invoke_role_arn: arn:aws:iam::123456789012:role/invoke-role-tenant-b
+    tasks:
+      - name: severity-classifier
+        base_model_id: llama-3-1-8b-instruct
+        training_data_s3_prefix: severity-classifier/
+        evaluation_data_s3_key: severity-classifier/eval.jsonl
+        current_version: 1
+        regression_threshold: 0.02
+        accuracy_floor: 0.80

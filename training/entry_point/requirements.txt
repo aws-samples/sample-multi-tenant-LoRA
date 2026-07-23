@@ -1,0 +1,4 @@
+# Pinned extras layered on top of the HuggingFace PyTorch Training DLC.
+# The DLC already provides torch, transformers, accelerate, datasets; we add
+# PEFT for LoRA adapter training.
+peft>=0.13.0,<1.0.0

@@ -1,0 +1,56 @@
+# EXAMPLE base-model catalog. The training_framework_version /
+# training_pytorch_version / inference_framework_version values drive
+# sagemaker.image_uris.retrieve(); update to match the DLC you plan to use.
+#
+# hf_model_id may be either a HuggingFace hub id (pulled at train time) or
+# an S3 URI or relative path under <data_bucket>/<base_model_prefix>/ that
+# contains the pre-downloaded weights. S3 is faster and recommended for
+# production (avoids hub dependency and rate limiting).
+models:
+  - model_id: llama-3-1-8b-instruct
+    hf_model_id: meta-llama/Llama-3.1-8B-Instruct
+    training_framework: huggingface
+    training_framework_version: "4.46.1"
+    training_pytorch_version: "2.3.0"
+    training_py_version: py311
+    inference_framework: djl-lmi
+    inference_framework_version: "0.29.0"
+    default_hyperparameters:
+      lora_r: 16
+      lora_alpha: 32
+      lora_dropout: 0.05
+      target_modules: [q_proj, v_proj, k_proj, o_proj]
+      epochs: 3
+      per_device_train_batch_size: 4
+      learning_rate: 0.0002
+      max_seq_length: 2048
+    lmi_env:
+      OPTION_ROLLING_BATCH: lmi-dist
+      OPTION_DTYPE: fp16
+      OPTION_MAX_MODEL_LEN: "4096"
+      OPTION_MAX_ROLLING_BATCH_SIZE: "16"
+      OPTION_TENSOR_PARALLEL_DEGREE: max
+
+  - model_id: mistral-7b-instruct-v0-3
+    hf_model_id: mistralai/Mistral-7B-Instruct-v0.3
+    training_framework: huggingface
+    training_framework_version: "4.46.1"
+    training_pytorch_version: "2.3.0"
+    training_py_version: py311
+    inference_framework: djl-lmi
+    inference_framework_version: "0.29.0"
+    default_hyperparameters:
+      lora_r: 16
+      lora_alpha: 32
+      lora_dropout: 0.05
+      target_modules: [q_proj, v_proj, k_proj, o_proj, gate_proj, up_proj, down_proj]
+      epochs: 3
+      per_device_train_batch_size: 4
+      learning_rate: 0.0002
+      max_seq_length: 2048
+    lmi_env:
+      OPTION_ROLLING_BATCH: lmi-dist
+      OPTION_DTYPE: fp16
+      OPTION_MAX_MODEL_LEN: "4096"
+      OPTION_MAX_ROLLING_BATCH_SIZE: "16"
+      OPTION_TENSOR_PARALLEL_DEGREE: max

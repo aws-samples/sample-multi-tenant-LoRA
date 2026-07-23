@@ -1,0 +1,41 @@
+# EXAMPLE instance profiles. Adjust training instance selection per model
+# size. The default inference profile maps to the blog's recommended
+# ml.g5.12xlarge for 500-tenant scale.
+training:
+  default:
+    instance_type: ml.g5.xlarge
+    instance_count: 1
+    volume_size_in_gb: 50
+    max_runtime_in_seconds: 3600
+  llama-3-1-8b-instruct:
+    instance_type: ml.g5.2xlarge
+    instance_count: 1
+    volume_size_in_gb: 100
+    max_runtime_in_seconds: 7200
+  mistral-7b-instruct-v0-3:
+    instance_type: ml.g5.2xlarge
+    instance_count: 1
+    volume_size_in_gb: 100
+    max_runtime_in_seconds: 7200
+
+inference:
+  small-fleet:
+    instance_type: ml.g5.2xlarge
+    initial_instance_count: 1
+    max_instance_count: 2
+    max_hot_adapters: 15
+    max_cpu_adapters: 40
+  multi-tenant-production:
+    instance_type: ml.g5.12xlarge
+    initial_instance_count: 1
+    max_instance_count: 4
+    max_hot_adapters: 30
+    max_cpu_adapters: 70
+  enterprise-scale:
+    instance_type: ml.p4d.24xlarge
+    initial_instance_count: 1
+    max_instance_count: 2
+    max_hot_adapters: 100
+    max_cpu_adapters: 200
+
+default_inference_profile: multi-tenant-production

@@ -1,0 +1,15 @@
+# EXAMPLE platform configuration — replace every placeholder before use.
+aws_account_id: "123456789012"
+region: us-east-1
+data_bucket: REPLACE-with-your-bucket-name
+base_model_prefix: base-model
+endpoint_name: itsm-multi-tenant-endpoint
+endpoint_variant_name: AllTraffic
+base_inference_component_name: itsm-base-model
+cloudwatch_namespace: MultiTenantLoRA
+# Optional: uncomment and replace to wire regression alarms to SNS.
+# regression_alarm_sns_topic_arn: arn:aws:sns:us-east-1:123456789012:adapter-regression-alerts
+# Optional: uncomment and replace to enable SageMaker managed MLflow tracking.
+# mlflow:
+#   tracking_server_arn: arn:aws:sagemaker:us-east-1:123456789012:mlflow-tracking-server/your-server
+#   tracking_server_version: "3.0"

@@ -1,0 +1,3 @@
+{"instruction": "Classify the ticket type for this message.", "input": "Cannot connect to VPN from home office.", "output": "Network"}
+{"instruction": "Classify the ticket type for this message.", "input": "Password reset request for SSO account.", "output": "Identity"}
+{"instruction": "Classify the ticket type for this message.", "input": "Printer on floor 3 shows paper jam error.", "output": "Hardware"}

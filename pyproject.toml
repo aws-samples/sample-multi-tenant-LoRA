@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "multi-tenant-lora"
+version = "0.1.0"
+description = "Multi-tenant LoRA fine-tuning and inference on Amazon SageMaker AI"
+requires-python = ">=3.10"
+dependencies = [
+    "sagemaker>=2.240.0",
+    "boto3>=1.35.0",
+    "pyyaml>=6.0",
+    "click>=8.1.0",
+    "rich>=13.0.0",
+    "pydantic>=2.0.0",
+]
+
+[project.scripts]
+multi-tenant-lora = "multi_tenant_lora.cli:cli"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"*" = ["*.yaml", "*.txt"]

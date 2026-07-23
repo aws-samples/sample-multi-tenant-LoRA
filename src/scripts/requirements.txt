@@ -1,0 +1,5 @@
+# Installed inside the SageMaker training container
+peft>=0.14.0
+datasets>=3.0.0
+accelerate>=1.2.0
+bitsandbytes>=0.45.0

@@ -1,0 +1,11 @@
+Metadata-Version: 2.4
+Name: multi-tenant-lora
+Version: 0.1.0
+Summary: Multi-tenant LoRA fine-tuning and inference on Amazon SageMaker AI
+Requires-Python: >=3.10
+Requires-Dist: sagemaker>=2.240.0
+Requires-Dist: boto3>=1.35.0
+Requires-Dist: pyyaml>=6.0
+Requires-Dist: click>=8.1.0
+Requires-Dist: rich>=13.0.0
+Requires-Dist: pydantic>=2.0.0

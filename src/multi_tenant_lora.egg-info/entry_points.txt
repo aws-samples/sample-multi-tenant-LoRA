@@ -1,0 +1,2 @@
+[console_scripts]
+multi-tenant-lora = multi_tenant_lora.cli:cli
