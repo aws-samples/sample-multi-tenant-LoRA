@@ -203,6 +203,13 @@ The entire platform is account-portable:
 No code changes required.
 
 
+## Authors
+
+This sample was built by:
+
+- **Shashi Kiran** ([@brskiran1](https://github.com/brskiran1)) — Amazon Web Services
+- **jdmcginn** — Amazon Web Services
+
 ## Security
 
 See [CONTRIBUTING](CONTRIBUTING.md#security-issue-notifications) for more information.
